@@ -396,11 +396,9 @@
             watchdogTimer = setTimeout(function() {
                 csvRows.push([windowId, new Date().toISOString(), loadCounter, -1, -1, _fc]);
                 try { sessionStorage.setItem('csvRows', JSON.stringify(csvRows)); } catch(e) {}
-                var btn = document.getElementById('SaveCSVBtn');
-                if (btn) btn.value = 'Save CSV (' + (csvRows.length - 1) + ' rows)';
-                var divCounter = document.getElementById('LoadReportCounter');
-                divCounter.innerHTML = divCounter.innerHTML + '<br/>[Timeout at refresh ' + loadCounter + ']';
-                EmbedReport();
+                sessionStorage.setItem('reloadCounter', loadCounter);
+                sessionStorage.setItem('originalStartTime', startTime);
+                location.reload(false);
             }, 15000);
 
 
