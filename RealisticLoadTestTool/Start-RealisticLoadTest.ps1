@@ -85,6 +85,8 @@ try {
     Write-OK "Selected: $($report.Name)"
 
     # Step 5: Generate config files and launch Chrome windows
+    $inputN = Read-Host "`n      Number of Chrome windows (press Enter for $INSTANCES)"
+    if ($inputN -match '^\d+$' -and [int]$inputN -gt 0) { $INSTANCES = [int]$inputN }
     Write-Step 5 "Generating config and launching $INSTANCES Chrome windows..."
 
     # PBIToken.JSON - write JS variable assignment that HTML loads as <script>
