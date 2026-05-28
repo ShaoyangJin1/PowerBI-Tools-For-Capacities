@@ -38,20 +38,25 @@ if (-not (Get-Module -Name MicrosoftPowerBIMgmt -ListAvailable)) {
 Import-Module MicrosoftPowerBIMgmt -ErrorAction Stop
 Write-OK "模块就绪 ✓"
 
-# ── 步骤 2: 创建测试目录并下载 JS 库 ─────────────────────────
+# ── 步骤 2: 创建测试目录并准备 JS 库 ─────────────────────────
 Write-Step 2 "准备测试目录和 JS 库..."
 New-Item -Path $testDir -ItemType Directory -Force | Out-Null
 
-$jqueryPath = Join-Path $testDir "jquery.min.js"
-$pbiJsPath  = Join-Path $testDir "powerbi.min.js"
+$jquerySrc = Join-Path $workingDir "jquery.min.js"
+$pbiJsSrc  = Join-Path $workingDir "powerbi.min.js"
+$jqueryDst = Join-Path $testDir "jquery.min.js"
+$pbiJsDst  = Join-Path $testDir "powerbi.min.js"
 
-if (-not (Test-Path $jqueryPath)) {
-    Write-Info "下载 jquery.min.js（BootCDN）..."
-    Invoke-WebRequest -Uri "https://cdn.bootcdn.net/ajax/libs/jquery/1.11.1/jquery.min.js" -OutFile $jqueryPath
-}
-if (-not (Test-Path $pbiJsPath)) {
-    Write-Info "下载 powerbi.min.js（jsDelivr）..."
-    Invoke-WebRequest -Uri "https://cdn.jsdelivr.net/npm/powerbi-client@2.23.1/dist/powerbi.min.js" -OutFile $pbiJsPath
+# 优先从仓库目录复制，失败则尝试网络下载
+foreach ($pair in @(($jquerySrc,$jqueryDst,"https://cdn.bootcdn.net/ajax/libs/jquery/1.11.1/jquery.min.js"),
+                    ($pbiJsSrc,$pbiJsDst,"https://cdn.jsdelivr.net/npm/powerbi-client@2.23.1/dist/powerbi.min.js"))) {
+    $src, $dst, $url = $pair
+    if (Test-Path $src) {
+        Copy-Item $src $dst
+    } else {
+        Write-Info "本地未找到，尝试下载: $url"
+        Invoke-WebRequest -Uri $url -OutFile $dst -ErrorAction Stop
+    }
 }
 Write-OK "JS 库就绪 ✓"
 
