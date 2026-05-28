@@ -11,6 +11,15 @@
 
 $htmlFileName = 'RealisticLoadTest.html'
 $workingDir = $pwd.Path
+$chromePath = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe' -ErrorAction SilentlyContinue).'(default)'
+if ([string]::IsNullOrWhiteSpace($chromePath) -or !(Test-Path -Path $chromePath))
+{
+    $chromePath = (Get-ItemProperty 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe' -ErrorAction SilentlyContinue).'(default)'
+}
+if ([string]::IsNullOrWhiteSpace($chromePath) -or !(Test-Path -Path $chromePath))
+{
+    throw "Unable to find chrome.exe. Install Google Chrome or update Run_Load_Test_Only.ps1 with the full Chrome path."
+}
 "This script finds all subdirectories with $htmlFileName files and runs a specifies number of instances of each."
 $instances = [int] $(Read-Host -Prompt 'Enter number of instances to initiate for each report')
 $numberOfPhysicalCores = (Get-WmiObject –class Win32_processor).NumberOfCores;
@@ -57,8 +66,14 @@ foreach ($destinationDir in $directories)
         $loopCounter = [int]$instances
         while($loopCounter -gt 0)
         {
-        $reportHtmlFile
-            start chrome "--user-data-dir=""ChromeProfiles\Profile$profile"" --disable-default-apps --new-window ""$($reportHtmlFile)"""            
+            $reportHtmlFile
+            $profileDir = Join-Path $workingDir "ChromeProfiles\Profile$profile"
+            Start-Process -FilePath $chromePath -ArgumentList @(
+                "--user-data-dir=$profileDir",
+                "--disable-default-apps",
+                "--new-window",
+                $reportHtmlFile
+            )
             --$loopCounter
             $profile = ($profile+1) % $numberOfPhysicalCores;
             sleep -Seconds 5

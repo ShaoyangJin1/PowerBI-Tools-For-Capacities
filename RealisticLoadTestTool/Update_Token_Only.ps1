@@ -57,7 +57,7 @@ try
 catch
 {
     Write-Host "Select Id to authenticate to Power BI" -ForegroundColor Yellow
-    $user = Login-PowerBI
+    $user = Login-PowerBI -Environment China
     $user
 }
 

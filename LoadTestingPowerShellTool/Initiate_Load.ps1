@@ -85,7 +85,7 @@ while($reportCount -gt 0)
     
     # Get required inputs from user
     Write-Host "Select Id to authenticate to Power BI" -ForegroundColor Yellow
-    Login-PowerBI
+    Login-PowerBI -Environment China
 
     #Accessing list of workspaces
     $workSpaceList = Get-PowerBIWorkspace
