@@ -219,7 +219,25 @@
 
         var report;
 
-		
+        // ---- CSV logging ----
+        var csvRows = [];
+        try { var _s = sessionStorage.getItem('csvRows'); csvRows = _s ? JSON.parse(_s) : []; } catch(e) { csvRows = []; }
+        if (csvRows.length === 0) csvRows.push(['window_id','timestamp','refresh_num','render_ms','avg_render_ms','filter_index']);
+        var windowId = sessionStorage.getItem('windowId');
+        if (!windowId) { windowId = Math.random().toString(36).substr(2,6); sessionStorage.setItem('windowId', windowId); }
+
+        function downloadCSV() {
+            var c = csvRows.map(function(r){ return r.join(','); }).join('\r\n');
+            var b = new Blob([c], {type:'text/csv'});
+            var u = URL.createObjectURL(b);
+            var a = document.createElement('a');
+            a.href = u;
+            a.download = 'pbi_load_' + windowId + '_' + new Date().toISOString().replace(/[:.]/g,'').substr(0,15) + '.csv';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u);
+        }
+        // ---- end CSV logging ----
+
+
 
         //added by SergeiG 5/4/2018 to embed a report
 
@@ -361,7 +379,17 @@
 
 
 
-            report.on("rendered",function() { setTimeout("EmbedReport()",thinkTimeSeconds*1000) });
+            var _embedStart = new Date();
+            var _fc = filterCounter;
+            report.on("rendered", function() {
+                var renderMs = (new Date()) - _embedStart;
+                var avgMs = Math.round(((new Date()) - startTime - thinkTimeSeconds * loadCounter * 1000) / loadCounter);
+                csvRows.push([windowId, new Date().toISOString(), loadCounter, renderMs, avgMs, _fc]);
+                try { sessionStorage.setItem('csvRows', JSON.stringify(csvRows)); } catch(e) {}
+                var btn = document.getElementById('SaveCSVBtn');
+                if (btn) btn.value = 'Save CSV (' + (csvRows.length - 1) + ' rows)';
+                setTimeout("EmbedReport()", thinkTimeSeconds * 1000);
+            });
 
 
 			if (justFlipBookmark)
@@ -403,12 +431,15 @@
 
             if((loadCounter % sessionRestart) === 0) {
 
-                sessionStorage.setItem('reloadCounter',loadCounter);      
-                sessionStorage.setItem('originalStartTime',startTime);      				
+                sessionStorage.setItem('reloadCounter',loadCounter);
+                sessionStorage.setItem('originalStartTime',startTime);
+                downloadCSV();
+                csvRows = [['window_id','timestamp','refresh_num','render_ms','avg_render_ms','filter_index']];
+                sessionStorage.removeItem('csvRows');
 
                 location.reload(false);
 
-            };           
+            };
 
         } 
 
@@ -455,6 +486,7 @@
 
 
     <div id="LoadReportCounter">0</div>
+    <input type="button" id="SaveCSVBtn" value="Save CSV (0 rows)" onclick="downloadCSV()" style="margin:4px 0; padding:4px 10px; cursor:pointer;" />
 
     <!--
 	<div id="InfoMessage" style="font-weight:bolder;">Report URL and AAD token:</div>
